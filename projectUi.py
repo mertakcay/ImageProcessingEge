@@ -267,6 +267,31 @@ class Ui_MainWindow(object):
     def saveImage(self):
         image = ImageQt.fromqpixmap(self.label.pixmap())
         image.save('test.png')
+
+    def filtersApply(self):
+        if self.filtrelerComboBox.currentText()== 'Gaussian':
+            image = cv2.imread(path)
+            gaussian = cv2.GaussianBlur(image,(5,5),cv2.BORDER_DEFAULT) 
+            image = QtGui.QImage(gaussian, gaussian.shape[1], gaussian.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+        elif self.filtrelerComboBox.currentText()== 'Inverse': ##Inverse yerine GUIde Bilateral yazilicak.
+            image = cv2.imread(path)
+            bilateral = cv2.bilateralFilter(image, 15, 75, 75)
+            image = QtGui.QImage(bilateral, bilateral.shape[1], bilateral.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+        elif self.filtrelerComboBox.currentText()== 'Median': 
+            image = cv2.imread(path)
+            median = cv2.medianBlur(image, 5)
+            image = QtGui.QImage(median, median.shape[1], median.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+        elif self.filtrelerComboBox.currentText()== 'Roberts': ##GUI de Robertsi Average ile degis.
+            image = cv2.imread(path)
+            averagefilter = cv2.boxFilter(image, -1, (10, 10), normalize=True) 
+            image = QtGui.QImage(averagefilter, averagefilter.shape[1], averagefilter.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
     
     def MorpOperations(self):
         #base element for morp operations cases
