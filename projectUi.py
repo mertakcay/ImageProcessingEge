@@ -180,7 +180,7 @@ class Ui_MainWindow(object):
         self.saveButton.clicked.connect(self.saveImage)
         # self.videoButton.clicked.connect(self.edgeDetection)
         self.morphologicalButton.clicked.connect(self.MorpOperations)
-       ## self.applyButton.clicked.connect(self.filter)
+        self.applyButton.clicked.connect(self.filtersApply)
 
 
     def retranslateUi(self, MainWindow):
@@ -190,12 +190,12 @@ class Ui_MainWindow(object):
         self.loadButton.setText(_translate("MainWindow", "Load"))
         self.saveButton.setText(_translate("MainWindow", "Save"))
         self.filtrelerComboBox.setItemText(0, _translate("MainWindow", "Gaussian"))
-        self.filtrelerComboBox.setItemText(1, _translate("MainWindow", "Inverse"))
+        self.filtrelerComboBox.setItemText(1, _translate("MainWindow", "Bilateral"))
         self.filtrelerComboBox.setItemText(2, _translate("MainWindow", "Laplace"))
         self.filtrelerComboBox.setItemText(3, _translate("MainWindow", "Median"))
         self.filtrelerComboBox.setItemText(4, _translate("MainWindow", "Hessian"))
         self.filtrelerComboBox.setItemText(5, _translate("MainWindow", "Farid"))
-        self.filtrelerComboBox.setItemText(6, _translate("MainWindow", "Roberts"))
+        self.filtrelerComboBox.setItemText(6, _translate("MainWindow", "Average"))
         self.filtrelerComboBox.setItemText(7, _translate("MainWindow", "Otsu"))
         self.filtrelerComboBox.setItemText(8, _translate("MainWindow", "Sobel"))
         self.filtrelerComboBox.setItemText(9, _translate("MainWindow", "Sato"))
@@ -275,7 +275,7 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(gaussian, gaussian.shape[1], gaussian.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.filtrelerComboBox.currentText()== 'Inverse': ##Inverse yerine GUIde Bilateral yazilicak.
+        elif self.filtrelerComboBox.currentText()== 'Bilateral':
             image = cv2.imread(path)
             bilateral = cv2.bilateralFilter(image, 15, 75, 75)
             image = QtGui.QImage(bilateral, bilateral.shape[1], bilateral.shape[0], QtGui.QImage.Format_RGB888)
@@ -287,7 +287,7 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(median, median.shape[1], median.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.filtrelerComboBox.currentText()== 'Roberts': ##GUI de Robertsi Average ile degis.
+        elif self.filtrelerComboBox.currentText()== 'Average':
             image = cv2.imread(path)
             averagefilter = cv2.boxFilter(image, -1, (10, 10), normalize=True) 
             image = QtGui.QImage(averagefilter, averagefilter.shape[1], averagefilter.shape[0], QtGui.QImage.Format_RGB888)
