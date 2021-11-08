@@ -9,6 +9,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
 from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QFileDialog, QAction
 from PyQt5.QtGui import QPixmap
 from skimage import filters
@@ -19,9 +20,21 @@ from skimage.morphology import thin
 import numpy as np
 
 class Ui_MainWindow(object):
+    # class VideoThread(QThread):
+    # change_pixmap_signal = pyqtSignal(np.ndarray)
+
+    # def run(self):
+    #     # capture from web cam
+    #     cap = cv2.VideoCapture(0)
+    #     while True:
+    #         ret, cv_img = cap.read()
+    #         if ret:
+    #             self.change_pixmap_signal.emit(cv_img)
+
+
     path = ''
     def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
+        MainWindow.setObjectName("Computer Vision Project")
         MainWindow.resize(811, 654)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -202,18 +215,45 @@ class Ui_MainWindow(object):
         self.morphologicalComboBox.setItemText(1, _translate("MainWindow", "Dilation"))
         self.morphologicalComboBox.setItemText(2, _translate("MainWindow", "Opening"))
         self.morphologicalComboBox.setItemText(3, _translate("MainWindow", "Closing"))
-        self.morphologicalComboBox.setItemText(4, _translate("MainWindow", "Skeletonize"))
+        self.morphologicalComboBox.setItemText(4, _translate("MainWindow", "Cross"))
         self.morphologicalComboBox.setItemText(5, _translate("MainWindow", "Black Hat Transformation"))
         self.morphologicalComboBox.setItemText(6, _translate("MainWindow", "Top Hat Transformation"))
-        self.morphologicalComboBox.setItemText(7, _translate("MainWindow", "Max Tree"))
+        self.morphologicalComboBox.setItemText(7, _translate("MainWindow", "Rectangle"))
         self.morphologicalComboBox.setItemText(8, _translate("MainWindow", "Morphological Gradient"))
-        self.morphologicalComboBox.setItemText(9, _translate("MainWindow", "Flood fill"))
+        self.morphologicalComboBox.setItemText(9, _translate("MainWindow", "Ellipse"))
 
         self.edgeLabel.setText(_translate("MainWindow", "Edge Determination"))
         self.videoButton.setText(_translate("MainWindow", "Choose Video"))
         self.exposureButton.setText(_translate("MainWindow", "Exposure Apply"))
         self.morphologicalButton.setText(_translate("MainWindow", "Morphological Apply"))
         self.spatialButton.setText(_translate("MainWindow", "Spatial Apply"))
+
+
+    def edge_detection(self,frame):
+        if(len(frame.shape)==3):
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame = cv2.GaussianBlur(frame, (5, 5), 0)
+        
+        frame = cv2.Canny(frame, 30, 150)
+
+        return frame
+        
+                
+    @pyqtSlot(np.ndarray)
+    def update_image(self, cv_img):
+        
+        qt_img = self.convert_cv_qt(cv_img)
+        self.image_label.setPixmap(qt_img)
+    
+    def convert_cv_qt(self, cv_img):
+        
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+        p = convert_to_Qt_format.scaled(self.disply_width, self.display_height, Qt.KeepAspectRatio)
+        return QPixmap.fromImage(p)
+
 
 
     def show_image(self):
@@ -223,13 +263,6 @@ class Ui_MainWindow(object):
         image = cv2.imread(path)
         image = QtGui.QImage(image, image.shape[1], image.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
         self.label.setPixmap(QtGui.QPixmap.fromImage(image))
-
-
-    # def openImage(self):
-    #     global pixmap
-    #     imagePath, _ = QFileDialog.getOpenFileName()
-    #     pixmap = QPixmap(imagePath)
-    #     self.label.setPixmap(pixmap)
 
     def saveImage(self):
         image = ImageQt.fromqpixmap(self.label.pixmap())
@@ -263,26 +296,10 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(close, close.shape[1], close.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.morphologicalComboBox.currentText() == 'Skeletonize': #Problemli
+        elif self.morphologicalComboBox.currentText() == 'Cross':
             image = cv2.imread(path)
-            skeleton = np.zeros_like(image,np.uint8)
-            _,thresh = cv2.threshold(image,127,255,0)
-
-            kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
-
-            iters = 0
-            while(True):
-                eroded = cv2.erode(thresh, kernel)
-                temp = cv2.dilate(eroded, kernel)
-                temp = cv2.subtract(thresh, temp)
-                skeleton = cv2.bitwise_or(skeleton, temp)
-                thresh = eroded.copy()
-
-                iters += 1
-                if cv2.countNonZero(thresh) == 0:
-                    break
-
-            image = QtGui.QImage(skeleton, skeleton.shape[1], skeleton.shape[0], QtGui.QImage.Format_RGB888)
+            cross = cv2.morphologyEx(image, cv2.MORPH_CROSS, se_cv2)
+            image = QtGui.QImage(cross, cross.shape[1], cross.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
         elif self.morphologicalComboBox.currentText() == 'Black Hat Transformation':
@@ -297,15 +314,10 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(top, top.shape[1], top.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.morphologicalComboBox.currentText() == 'Max Tree':
+        elif self.morphologicalComboBox.currentText() == 'Rectangle':
             image = cv2.imread(path)
-            if len(image.shape)==3:
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            
-            _,image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            # skeleton = thin(image)
-            # skeleton = skeleton.astype(np.uint8)
-            image = QtGui.QImage(image, image.shape[0], image.shape[1], QtGui.QImage.Format_RGB888)
+            rect = cv2.morphologyEx(image, cv2.MORPH_RECT, se_cv2)
+            image = QtGui.QImage(rect, rect.shape[1], rect.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))               
 
         elif self.morphologicalComboBox.currentText() == 'Morphological Gradient':
@@ -314,11 +326,11 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(gradient, gradient.shape[1], gradient.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.morphologicalComboBox.currentText() == 'Flood fill':
+        elif self.morphologicalComboBox.currentText() == 'Ellipse':
             image = cv2.imread(path)
-
+            ellipse = cv2.morphologyEx(image, cv2.MORPH_ELLIPSE, se_cv2)
+            image = QtGui.QImage(ellipse, ellipse.shape[1], ellipse.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
-
         else:
             pass
 
