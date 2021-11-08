@@ -19,7 +19,7 @@ import cv2
 from skimage.morphology import thin
 import numpy as np
 import argparse
-from cv2.ximgproc import guidedFilter
+from scipy.ndimage.filters import median_filter
 
 class Ui_MainWindow(object):
     # class VideoThread(QThread):
@@ -195,10 +195,10 @@ class Ui_MainWindow(object):
         self.filtrelerComboBox.setItemText(1, _translate("MainWindow", "Bilateral"))
         self.filtrelerComboBox.setItemText(2, _translate("MainWindow", "Laplace"))
         self.filtrelerComboBox.setItemText(3, _translate("MainWindow", "Median"))
-        self.filtrelerComboBox.setItemText(4, _translate("MainWindow", "Hessian"))
-        self.filtrelerComboBox.setItemText(5, _translate("MainWindow", "Farid"))
-        self.filtrelerComboBox.setItemText(6, _translate("MainWindow", "Average"))
-        self.filtrelerComboBox.setItemText(7, _translate("MainWindow", "Otsu"))
+        self.filtrelerComboBox.setItemText(4, _translate("MainWindow", "Average"))
+        self.filtrelerComboBox.setItemText(5, _translate("MainWindow", "Bright"))
+        self.filtrelerComboBox.setItemText(6, _translate("MainWindow", "Scharr"))
+        self.filtrelerComboBox.setItemText(7, _translate("MainWindow", "Sharpen"))
         self.filtrelerComboBox.setItemText(8, _translate("MainWindow", "Sobel"))
         self.filtrelerComboBox.setItemText(9, _translate("MainWindow", "Sato"))
         self.applyButton.setText(_translate("MainWindow", "Apply"))
@@ -301,8 +301,25 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(laplacian, laplacian.shape[1], laplacian.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
         
+        elif self.filtrelerComboBox.currentText()== 'Bright':
+            image = cv2.imread(path)
+            brightLAB = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+            image = QtGui.QImage(brightLAB, brightLAB.shape[1], brightLAB.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-      
+        elif self.filtrelerComboBox.currentText()== 'Scharr':
+            image = cv2.imread(path)
+            scharrx_filter = cv2.Scharr(image, ddepth=-1, dx=1, dy=0, scale=1, borderType=cv2.BORDER_DEFAULT)
+            image = QtGui.QImage(scharrx_filter, scharrx_filter.shape[1], scharrx_filter.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+        elif self.filtrelerComboBox.currentText()== 'Sharpen':
+            image = cv2.imread(path)
+            gaussian_3 = cv2.GaussianBlur(image, (0, 0), 2.0)
+            unsharp_image = cv2.addWeighted(image, 1.5, gaussian_3, -0.5, 0, image)
+            image = QtGui.QImage(unsharp_image, unsharp_image.shape[1], unsharp_image.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+        
             
     def MorpOperations(self):
         #base element for morp operations cases
