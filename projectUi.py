@@ -18,6 +18,8 @@ from PIL import Image as im
 import cv2 
 from skimage.morphology import thin
 import numpy as np
+import argparse
+from cv2.ximgproc import guidedFilter
 
 class Ui_MainWindow(object):
     # class VideoThread(QThread):
@@ -271,7 +273,7 @@ class Ui_MainWindow(object):
     def filtersApply(self):
         if self.filtrelerComboBox.currentText()== 'Gaussian':
             image = cv2.imread(path)
-            gaussian = cv2.GaussianBlur(image,(5,5),cv2.BORDER_DEFAULT) 
+            gaussian = cv2.GaussianBlur(image,(5,5),21)
             image = QtGui.QImage(gaussian, gaussian.shape[1], gaussian.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
@@ -292,7 +294,16 @@ class Ui_MainWindow(object):
             averagefilter = cv2.boxFilter(image, -1, (10, 10), normalize=True) 
             image = QtGui.QImage(averagefilter, averagefilter.shape[1], averagefilter.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
-    
+
+        elif self.filtrelerComboBox.currentText()== 'Laplace':
+            image = cv2.imread(path)
+            laplacian = cv2.Laplacian(image, 24, (5,5))
+            image = QtGui.QImage(laplacian, laplacian.shape[1], laplacian.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+        
+
+      
+            
     def MorpOperations(self):
         #base element for morp operations cases
         se_cv2 = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
