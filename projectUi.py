@@ -198,9 +198,9 @@ class Ui_MainWindow(object):
         self.filtrelerComboBox.setItemText(4, _translate("MainWindow", "Average"))
         self.filtrelerComboBox.setItemText(5, _translate("MainWindow", "Bright"))
         self.filtrelerComboBox.setItemText(6, _translate("MainWindow", "Scharr"))
-        self.filtrelerComboBox.setItemText(7, _translate("MainWindow", "Sharpen"))
-        self.filtrelerComboBox.setItemText(8, _translate("MainWindow", "Sobel"))
-        self.filtrelerComboBox.setItemText(9, _translate("MainWindow", "Sato"))
+        self.filtrelerComboBox.setItemText(7, _translate("MainWindow", "Unsharpen"))
+        self.filtrelerComboBox.setItemText(8, _translate("MainWindow", "Low Pass"))
+        self.filtrelerComboBox.setItemText(9, _translate("MainWindow", "Sharpen"))
         self.applyButton.setText(_translate("MainWindow", "Apply"))
         self.histogramLabel.setText(_translate("MainWindow", "Histogram display and thresholding"))
         self.histogramDisplayButton.setText(_translate("MainWindow", "Display"))
@@ -301,7 +301,7 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(laplacian, laplacian.shape[1], laplacian.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
         
-        elif self.filtrelerComboBox.currentText()== 'Bright':
+        elif self.filtrelerComboBox.currentText()== 'Bright': ##renk tonlarina bakilacak
             image = cv2.imread(path)
             brightLAB = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
             image = QtGui.QImage(brightLAB, brightLAB.shape[1], brightLAB.shape[0], QtGui.QImage.Format_RGB888)
@@ -313,14 +313,32 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(scharrx_filter, scharrx_filter.shape[1], scharrx_filter.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.filtrelerComboBox.currentText()== 'Sharpen':
+        elif self.filtrelerComboBox.currentText()== 'Unsharpen': ##degerlere bakilacak
             image = cv2.imread(path)
             gaussian_3 = cv2.GaussianBlur(image, (0, 0), 2.0)
             unsharp_image = cv2.addWeighted(image, 1.5, gaussian_3, -0.5, 0, image)
             image = QtGui.QImage(unsharp_image, unsharp_image.shape[1], unsharp_image.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
         
+        elif self.filtrelerComboBox.currentText()== 'Low Pass':
+            image = cv2.imread(path)
+            kernel = np.array([[1, 1, 1], 
+                   [1, 1, 1], 
+                   [1, 1, 1]])
+            kernel = kernel/sum(kernel)
+
             
+            img_rst = cv2.filter2D(image,-1,kernel)
+            image = QtGui.QImage(img_rst, img_rst.shape[1], img_rst.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            
+        elif self.filtrelerComboBox.currentText()== 'Sharpen':
+            image = cv2.imread(path)
+            kernel_sharpen_1 = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+            sharpen=cv2.filter2D(image, -1, kernel_sharpen_1)
+            image = QtGui.QImage(sharpen, sharpen.shape[1], sharpen.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
     def MorpOperations(self):
         #base element for morp operations cases
         se_cv2 = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
