@@ -485,7 +485,13 @@ class Ui_MainWindow(object):
             plt.title(titles[i])
             plt.xticks([]),plt.yticks([])
         plt.show()
-    ##def exposureDisplay(self):
+
+    def exposureDisplay(self): ##Sadece Power-Law Tranformation yaptim,onun icin de sadece 1 tane gamma degeri istiyor.
+        image = cv2.imread(path)
+        gamma=float(self.exposure1Text.toPlainText())
+        gamma_corrected = np.array(255*(image / 255) ** gamma, dtype = 'uint8')
+        image = QtGui.QImage(gamma_corrected, gamma_corrected.shape[1], gamma_corrected.shape[0], QtGui.QImage.Format_RGB888)
+        self.label.setPixmap(QtGui.QPixmap.fromImage(image))
         
 if __name__ == "__main__":
     import sys
