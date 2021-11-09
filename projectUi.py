@@ -20,6 +20,11 @@ from skimage.morphology import thin
 import numpy as np
 import argparse
 from scipy.ndimage.filters import median_filter
+from matplotlib.patches import Circle
+from skimage import transform
+from skimage.io import imread, imshow
+from wand.image import Image
+from matplotlib import pyplot as plt
 
 class Ui_MainWindow(object):
     # class VideoThread(QThread):
@@ -183,6 +188,10 @@ class Ui_MainWindow(object):
         # self.videoButton.clicked.connect(self.edgeDetection)
         self.morphologicalButton.clicked.connect(self.MorpOperations)
         self.applyButton.clicked.connect(self.filtersApply)
+        self.spatialButton.clicked.connect(self.spatialApply)
+        self.histogramDisplayButton.clicked.connect(self.histDisplay)
+        self.histogramThreshholdingButton.clicked.connect(self.histThreshholding)
+        self.exposureButton.clicked.connect(self.exposureDisplay)
 
 
     def retranslateUi(self, MainWindow):
@@ -208,7 +217,7 @@ class Ui_MainWindow(object):
         self.spatialLabel.setText(_translate("MainWindow", "Spatial transformations"))
         self.spatialComboBox.setItemText(0, _translate("MainWindow", "Resize"))
         self.spatialComboBox.setItemText(1, _translate("MainWindow", "Rotate"))
-        self.spatialComboBox.setItemText(2, _translate("MainWindow", "Swirl"))
+        self.spatialComboBox.setItemText(2, _translate("MainWindow", "Mirroring"))
         self.spatialComboBox.setItemText(3, _translate("MainWindow", "Warp"))
         self.spatialComboBox.setItemText(4, _translate("MainWindow", "Crop"))
         self.exposureLabel.setText(_translate("MainWindow", "Exposure"))
@@ -405,8 +414,79 @@ class Ui_MainWindow(object):
         else:
             pass
 
-  
+    def spatialApply(self):   
+        if self.spatialComboBox.currentText() == 'Rotate':     #sadece 1 kez rotate yapiyor.
+            image = cv2.imread(path)
+            rotation = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+            image = QtGui.QImage(rotation, rotation.shape[1], rotation.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
+        elif self.spatialComboBox.currentText() == 'Crop': ##Crop koordinatlari istenirse degistir.
+            image = cv2.imread(path)
+            y=0
+            x=0
+            h=100
+            w=200
+            cropped_image = image[y:y+h, x:x+w]
+            cropped_image = np.transpose(cropped_image,(1,0,2)).copy()
+            image = QtGui.QImage(cropped_image, cropped_image.shape[1], cropped_image.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+        elif self.spatialComboBox.currentText() == 'Resize': ##Resize yaptiktan sonra yine tum ekrana genisletiyor.
+            image = cv2.imread(path)
+            scale_percent = 60 # percent of original size
+            width = int(image.shape[1] * scale_percent / 100)
+            height = int(image.shape[0] * scale_percent / 100)
+            dim = (width, height)
+            resized = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
+            image = QtGui.QImage(resized, resized.shape[1], resized.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+        elif self.spatialComboBox.currentText() == 'Mirroring': 
+            image = cv2.imread(path)
+            num_rows, num_cols = image.shape[:2]
+            src_points = np.float32([[0,0], [num_cols-1,0], [0,num_rows-1]])
+            dst_points = np.float32([[num_cols-1,0], [0,0], [num_cols-1,num_rows-1]])
+            matrix = cv2.getAffineTransform(src_points, dst_points)
+            mirror_img = cv2.warpAffine(image, matrix, (num_cols,num_rows))
+            image = QtGui.QImage(mirror_img, mirror_img.shape[1], mirror_img.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+        elif self.spatialComboBox.currentText() == 'Warp':      ##Warp yaptiktan sonra tum ekrana genisletiyor.
+            image = cv2.imread(path)
+            width,height = 250,350
+            pts1 = np.float32([[124,161],[189,155],[200,231],[135,245]])
+            pts2 = np.float32([[0,0],[width,0],[width,height],[0,height]])
+            matrix = cv2.getPerspectiveTransform(pts1,pts2)  
+            imgWarped = cv2.warpPerspective(image,matrix,(width,height))
+            image = QtGui.QImage(imgWarped, imgWarped.shape[1], imgWarped.shape[0], QtGui.QImage.Format_RGB888)
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+    def histDisplay(self):
+        image = cv2.imread(path)
+        img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        size_y = img.shape[0] 
+        size_x = img.shape[1]
+        flattened = img.reshape([size_x*size_y]) 
+        rhist,_ ,_ = plt.hist(flattened, bins=256)
+        plt.show() 
+
+    def histThreshholding(self):  
+        image = cv2.imread(path)
+        ret,thresh1 = cv2.threshold(image,127,255,cv2.THRESH_BINARY)
+        ret,thresh2 = cv2.threshold(image,127,255,cv2.THRESH_BINARY_INV)
+        ret,thresh3 = cv2.threshold(image,127,255,cv2.THRESH_TRUNC)
+        ret,thresh4 = cv2.threshold(image,127,255,cv2.THRESH_TOZERO)
+        ret,thresh5 = cv2.threshold(image,127,255,cv2.THRESH_TOZERO_INV)
+        titles = ['Original Image','BINARY','BINARY_INV','TRUNC','TOZERO','TOZERO_INV']
+        images = [image, thresh1, thresh2, thresh3, thresh4, thresh5]
+        for i in range(6):
+            plt.subplot(2,3,i+1),plt.imshow(images[i],'gray')
+            plt.title(titles[i])
+            plt.xticks([]),plt.yticks([])
+        plt.show()
+    ##def exposureDisplay(self):
+        
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
