@@ -23,21 +23,9 @@ from scipy.ndimage.filters import median_filter
 from matplotlib.patches import Circle
 from skimage import transform
 from skimage.io import imread, imshow
-from wand.image import Image
 from matplotlib import pyplot as plt
 
 class Ui_MainWindow(object):
-    # class VideoThread(QThread):
-    # change_pixmap_signal = pyqtSignal(np.ndarray)
-
-    # def run(self):
-    #     # capture from web cam
-    #     cap = cv2.VideoCapture(0)
-    #     while True:
-    #         ret, cv_img = cap.read()
-    #         if ret:
-    #             self.change_pixmap_signal.emit(cv_img)
-
 
     path = ''
     def setupUi(self, MainWindow):
@@ -192,7 +180,7 @@ class Ui_MainWindow(object):
         self.histogramDisplayButton.clicked.connect(self.histDisplay)
         self.histogramThreshholdingButton.clicked.connect(self.histThreshholding)
         self.exposureButton.clicked.connect(self.exposureDisplay)
-
+        self.videoButton.clicked.connect(self.edge_detection)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -238,16 +226,28 @@ class Ui_MainWindow(object):
         self.exposureButton.setText(_translate("MainWindow", "Exposure Apply"))
         self.morphologicalButton.setText(_translate("MainWindow", "Morphological Apply"))
         self.spatialButton.setText(_translate("MainWindow", "Spatial Apply"))
-
-
-    def edge_detection(self,frame):
-        if(len(frame.shape)==3):
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frame = cv2.GaussianBlur(frame, (5, 5), 0)
         
-        frame = cv2.Canny(frame, 30, 150)
 
-        return frame
+    def edge_detection(self):
+        path, _ = QFileDialog.getOpenFileName()
+        cap = cv2.VideoCapture(path)
+        if (cap.isOpened()== False): 
+            print("Error opening video stream or file")
+        while(cap.isOpened()):
+            ret, frame = cap.read()
+            if(len(frame.shape)==3):
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame = cv2.GaussianBlur(frame, (5, 5), 0)
+            frame = cv2.Canny(frame, 30, 150)
+            if ret == True:
+                cv2.imshow('Frame',frame)
+
+                if cv2.waitKey(25) & 0xFF == ord('q'):
+                    break
+            else:
+                pass
+        cap.release()
+        cv2.destroyAllWindows()
         
                 
     @pyqtSlot(np.ndarray)
@@ -269,11 +269,15 @@ class Ui_MainWindow(object):
 
     def show_image(self):
         global path
-        path, _ = QFileDialog.getOpenFileName()
-        print(path)
-        image = cv2.imread(path)
-        image = QtGui.QImage(image, image.shape[1], image.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
-        self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+        try:
+            path, _ = QFileDialog.getOpenFileName()
+            image = cv2.imread(path)
+            image = QtGui.QImage(image, image.shape[1], image.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
+            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+        except:
+            print("Path Not Found")
+        
+        
 
     def saveImage(self):
         image = ImageQt.fromqpixmap(self.label.pixmap())
@@ -353,64 +357,102 @@ class Ui_MainWindow(object):
         se_cv2 = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
         #Operations Case 
         if self.morphologicalComboBox.currentText() == 'Erosion':
-            image = cv2.imread(path)
-            erosion = cv2.erode(image, se_cv2, iterations=1)
-            image = QtGui.QImage(erosion, erosion.shape[1], erosion.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            try:
+                image = cv2.imread(path)
+                erosion = cv2.erode(image, se_cv2, iterations=1)
+                image = QtGui.QImage(erosion, erosion.shape[1], erosion.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
 
         elif self.morphologicalComboBox.currentText() == 'Dilation':
-            image = cv2.imread(path)
-            dilate = cv2.dilate(image, se_cv2, iterations=1)
-            image = QtGui.QImage(dilate, dilate.shape[1], dilate.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            try:
+                image = cv2.imread(path)
+                dilate = cv2.dilate(image, se_cv2, iterations=1)
+                image = QtGui.QImage(dilate, dilate.shape[1], dilate.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
 
         elif self.morphologicalComboBox.currentText() == 'Opening':
-            image = cv2.imread(path)
-            open = cv2.morphologyEx(image, cv2.MORPH_OPEN, se_cv2)
-            image = QtGui.QImage(open, open.shape[1], open.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            try:
+                image = cv2.imread(path)
+                open = cv2.morphologyEx(image, cv2.MORPH_OPEN, se_cv2)
+                image = QtGui.QImage(open, open.shape[1], open.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
 
         elif self.morphologicalComboBox.currentText() == 'Closing':
-            image = cv2.imread(path)            
-            close = cv2.morphologyEx(image, cv2.MORPH_CLOSE, se_cv2)
-            image = QtGui.QImage(close, close.shape[1], close.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            try:
+                image = cv2.imread(path)            
+                close = cv2.morphologyEx(image, cv2.MORPH_CLOSE, se_cv2)
+                image = QtGui.QImage(close, close.shape[1], close.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
+
 
         elif self.morphologicalComboBox.currentText() == 'Cross':
-            image = cv2.imread(path)
-            cross = cv2.morphologyEx(image, cv2.MORPH_CROSS, se_cv2)
-            image = QtGui.QImage(cross, cross.shape[1], cross.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            try:
+                image = cv2.imread(path)
+                cross = cv2.morphologyEx(image, cv2.MORPH_CROSS, se_cv2)
+                image = QtGui.QImage(cross, cross.shape[1], cross.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
+
 
         elif self.morphologicalComboBox.currentText() == 'Black Hat Transformation':
-            image = cv2.imread(path)
-            black = cv2.morphologyEx(image, cv2.MORPH_BLACKHAT, se_cv2)
-            image = QtGui.QImage(black, black.shape[1], black.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+            try:
+                image = cv2.imread(path)
+                black = cv2.morphologyEx(image, cv2.MORPH_BLACKHAT, se_cv2)
+                image = QtGui.QImage(black, black.shape[1], black.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
+
 
         elif self.morphologicalComboBox.currentText() == 'Top Hat Transformation':
-            image = cv2.imread(path)
-            top = cv2.morphologyEx(image, cv2.MORPH_TOPHAT, se_cv2)
-            image = QtGui.QImage(top, top.shape[1], top.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            try:
+                image = cv2.imread(path)
+                top = cv2.morphologyEx(image, cv2.MORPH_TOPHAT, se_cv2)
+                image = QtGui.QImage(top, top.shape[1], top.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
+
 
         elif self.morphologicalComboBox.currentText() == 'Rectangle':
-            image = cv2.imread(path)
-            rect = cv2.morphologyEx(image, cv2.MORPH_RECT, se_cv2)
-            image = QtGui.QImage(rect, rect.shape[1], rect.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))               
+            try:
+                image = cv2.imread(path)
+                rect = cv2.morphologyEx(image, cv2.MORPH_RECT, se_cv2)
+                image = QtGui.QImage(rect, rect.shape[1], rect.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))    
+            except:
+                print("Path Error")
+           
 
         elif self.morphologicalComboBox.currentText() == 'Morphological Gradient':
-            image = cv2.imread(path)
-            gradient = cv2.morphologyEx(image, cv2.MORPH_GRADIENT, se_cv2)
-            image = QtGui.QImage(gradient, gradient.shape[1], gradient.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+
+            try:
+                image = cv2.imread(path)
+                gradient = cv2.morphologyEx(image, cv2.MORPH_GRADIENT, se_cv2)
+                image = QtGui.QImage(gradient, gradient.shape[1], gradient.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
 
         elif self.morphologicalComboBox.currentText() == 'Ellipse':
-            image = cv2.imread(path)
-            ellipse = cv2.morphologyEx(image, cv2.MORPH_ELLIPSE, se_cv2)
-            image = QtGui.QImage(ellipse, ellipse.shape[1], ellipse.shape[0], QtGui.QImage.Format_RGB888)
-            self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            try:
+                image = cv2.imread(path)
+                ellipse = cv2.morphologyEx(image, cv2.MORPH_ELLIPSE, se_cv2)
+                image = QtGui.QImage(ellipse, ellipse.shape[1], ellipse.shape[0], QtGui.QImage.Format_RGB888)
+                self.label.setPixmap(QtGui.QPixmap.fromImage(image))
+            except:
+                print("Path Error")
+            
         else:
             pass
 
