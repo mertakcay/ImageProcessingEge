@@ -84,9 +84,6 @@ class Ui_MainWindow(object):
         self.exposure1Text = QtWidgets.QTextEdit(self.centralwidget)
         self.exposure1Text.setGeometry(QtCore.QRect(17, 380, 141, 21))
         self.exposure1Text.setObjectName("exposure1Text")
-        self.exposure2Text = QtWidgets.QTextEdit(self.centralwidget)
-        self.exposure2Text.setGeometry(QtCore.QRect(160, 380, 141, 21))
-        self.exposure2Text.setObjectName("exposure2Text")
         self.morphologicalLabel = QtWidgets.QLabel(self.centralwidget)
         self.morphologicalLabel.setGeometry(QtCore.QRect(20, 460, 281, 16))
         self.morphologicalLabel.setObjectName("morphologicalLabel")
@@ -193,7 +190,7 @@ class Ui_MainWindow(object):
         self.filtrelerComboBox.setItemText(2, _translate("MainWindow", "Laplace"))
         self.filtrelerComboBox.setItemText(3, _translate("MainWindow", "Median"))
         self.filtrelerComboBox.setItemText(4, _translate("MainWindow", "Average"))
-        self.filtrelerComboBox.setItemText(5, _translate("MainWindow", "Bright"))
+        self.filtrelerComboBox.setItemText(5, _translate("MainWindow", "Box Filter"))
         self.filtrelerComboBox.setItemText(6, _translate("MainWindow", "Scharr"))
         self.filtrelerComboBox.setItemText(7, _translate("MainWindow", "Unsharpen"))
         self.filtrelerComboBox.setItemText(8, _translate("MainWindow", "Low Pass"))
@@ -206,7 +203,7 @@ class Ui_MainWindow(object):
         self.spatialComboBox.setItemText(0, _translate("MainWindow", "Resize"))
         self.spatialComboBox.setItemText(1, _translate("MainWindow", "Rotate"))
         self.spatialComboBox.setItemText(2, _translate("MainWindow", "Mirroring"))
-        self.spatialComboBox.setItemText(3, _translate("MainWindow", "Warp"))
+        self.spatialComboBox.setItemText(3, _translate("MainWindow", "Affine"))
         self.spatialComboBox.setItemText(4, _translate("MainWindow", "Crop"))
         self.exposureLabel.setText(_translate("MainWindow", "Exposure"))
         self.morphologicalLabel.setText(_translate("MainWindow", "Morphological Operations"))
@@ -314,10 +311,11 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(laplacian, laplacian.shape[1], laplacian.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
         
-        elif self.filtrelerComboBox.currentText()== 'Bright': ##renk tonlarina bakilacak
+        elif self.filtrelerComboBox.currentText()== 'Box Filter': 
             image = cv2.imread(path)
-            brightLAB = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-            image = QtGui.QImage(brightLAB, brightLAB.shape[1], brightLAB.shape[0], QtGui.QImage.Format_RGB888)
+            boxfilter = cv2.boxFilter(image, -1, (3,3))
+
+            image = QtGui.QImage(boxfilter, boxfilter.shape[1], boxfilter.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
         elif self.filtrelerComboBox.currentText()== 'Scharr':
@@ -457,13 +455,13 @@ class Ui_MainWindow(object):
             pass
 
     def spatialApply(self):   
-        if self.spatialComboBox.currentText() == 'Rotate':     #sadece 1 kez rotate yapiyor.
+        if self.spatialComboBox.currentText() == 'Rotate':     
             image = cv2.imread(path)
             rotation = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
             image = QtGui.QImage(rotation, rotation.shape[1], rotation.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.spatialComboBox.currentText() == 'Crop': ##Crop koordinatlari istenirse degistir.
+        elif self.spatialComboBox.currentText() == 'Crop': 
             image = cv2.imread(path)
             y=0
             x=0
@@ -474,7 +472,7 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(cropped_image, cropped_image.shape[1], cropped_image.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.spatialComboBox.currentText() == 'Resize': ##Resize yaptiktan sonra yine tum ekrana genisletiyor.
+        elif self.spatialComboBox.currentText() == 'Resize': 
             image = cv2.imread(path)
             scale_percent = 60 # percent of original size
             width = int(image.shape[1] * scale_percent / 100)
@@ -494,14 +492,14 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(mirror_img, mirror_img.shape[1], mirror_img.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.spatialComboBox.currentText() == 'Warp':      ##Warp yaptiktan sonra tum ekrana genisletiyor.
+        elif self.spatialComboBox.currentText() == 'Affine': 
             image = cv2.imread(path)
-            width,height = 250,350
-            pts1 = np.float32([[124,161],[189,155],[200,231],[135,245]])
-            pts2 = np.float32([[0,0],[width,0],[width,height],[0,height]])
-            matrix = cv2.getPerspectiveTransform(pts1,pts2)  
-            imgWarped = cv2.warpPerspective(image,matrix,(width,height))
-            image = QtGui.QImage(imgWarped, imgWarped.shape[1], imgWarped.shape[0], QtGui.QImage.Format_RGB888)
+            rows,cols = 256,256
+            pts1 = np.float32([[50,50],[200,50],[50,200]])
+            pts2 = np.float32([[10,100],[200,50],[100,250]])
+            M = cv2.getAffineTransform(pts1,pts2)
+            dst = cv2.warpAffine(image,M,(cols,rows))
+            image = QtGui.QImage(dst, dst.shape[1], dst.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def histDisplay(self):
@@ -528,7 +526,7 @@ class Ui_MainWindow(object):
             plt.xticks([]),plt.yticks([])
         plt.show()
 
-    def exposureDisplay(self): ##Sadece Power-Law Tranformation yaptim,onun icin de sadece 1 tane gamma degeri istiyor.
+    def exposureDisplay(self): 
         image = cv2.imread(path)
         gamma=float(self.exposure1Text.toPlainText())
         gamma_corrected = np.array(255*(image / 255) ** gamma, dtype = 'uint8')
