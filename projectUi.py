@@ -324,7 +324,7 @@ class Ui_MainWindow(object):
             image = QtGui.QImage(scharrx_filter, scharrx_filter.shape[1], scharrx_filter.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        elif self.filtrelerComboBox.currentText()== 'Unsharpen': ##degerlere bakilacak
+        elif self.filtrelerComboBox.currentText()== 'Unsharpen': 
             image = cv2.imread(path)
             gaussian_3 = cv2.GaussianBlur(image, (0, 0), 2.0)
             unsharp_image = cv2.addWeighted(image, 1.5, gaussian_3, -0.5, 0, image)
@@ -463,12 +463,12 @@ class Ui_MainWindow(object):
 
         elif self.spatialComboBox.currentText() == 'Crop': 
             image = cv2.imread(path)
-            y=0
-            x=0
+            y=50
+            x=50
             h=100
             w=200
-            cropped_image = image[y:y+h, x:x+w]
-            cropped_image = np.transpose(cropped_image,(1,0,2)).copy()
+            cropped_image = image[y:y+h, x:x+w]       
+            cropped_image = np.transpose(cropped_image,(0,1,2)).copy()
             image = QtGui.QImage(cropped_image, cropped_image.shape[1], cropped_image.shape[0], QtGui.QImage.Format_RGB888)
             self.label.setPixmap(QtGui.QPixmap.fromImage(image))
 
